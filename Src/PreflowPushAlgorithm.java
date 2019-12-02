@@ -156,7 +156,6 @@ public class PreflowPushAlgorithm {
 
 		// Start algorithm
 		while (!excessMaxHeap.isEmpty()) {
-			cnt++;
 			
 			Vertex v = excessMaxHeap.poll();
 			System.out.println("Poll out " + v.getName());
@@ -278,9 +277,19 @@ public class PreflowPushAlgorithm {
 		String fileName8 = "F:\\JAVA\\JDK11\\graphCode\\Graph\\n100-m100-cmin10-cmax20-f949.txt"; 
 		
 		SimpleGraph g = new SimpleGraph();
-		Hashtable t = GraphInput.LoadSimpleGraph(g, fileName8);
+		Hashtable t = GraphInput.LoadSimpleGraph(g, fileName1);
 		
 		System.out.println("");
+		
+		// Start recording running time in ms
+	    long start = System.currentTimeMillis();
+		
 		PreflowPush(g, t);
+		
+		// End recording running time in ms
+		long end = System.currentTimeMillis();
+		
+		System.out.println("");
+		System.out.println("Running time: " + (end - start) + "ms");
 	}
 }
