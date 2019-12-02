@@ -1,5 +1,6 @@
 package Team6.AA_final;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -15,17 +16,33 @@ import Team6.graph.Vertex;
 
 public class FFScaling {
 
+	static final String GRAPH_PATH = "GRAPH\\";
+
+	/**
+	 * Code to test the methods of this class.
+	 */
 	public static void main(String[] args) {
-		SimpleGraph graph = new SimpleGraph();
-		GraphInput.LoadSimpleGraph(graph, "src\\main\\java\\Team6\\graphGenerationCode\\Random\\n100-m100-cmin10-cmax20-f949.txt");
-		SimpleGraph flowGraph = toFlowGraph(graph);
-		HashMap<String, Vertex> vertices = getVertexMap(flowGraph);
-		System.out.println(FFScaling(flowGraph, vertices));
+		String[] filelist = new File(GRAPH_PATH).list();
+
+		for (int i = 0; i < filelist.length; i++) {
+			SimpleGraph graph = new SimpleGraph();
+			GraphInput.LoadSimpleGraph(graph, GRAPH_PATH + filelist[i]);
+			System.out.println("maximum flow:" + FFScaling(toFlowGraph(graph)) + "\n");
+		}
+
 	}
 
+	/**
+	 * Compute the maximum flow value of a network flow graph.
+	 * 
+	 * @param flowGraph The network flow graph to compute maximum flow
+	 * @return The maximum flow value of flowGraph
+	 */
 	@SuppressWarnings("unchecked")
-	public static Double FFScaling(SimpleGraph flowGraph, HashMap<String, Vertex> vertices) {
+	public static Double FFScaling(SimpleGraph flowGraph) {
+		Long startTime = System.currentTimeMillis();
 		Double maxFlow = 0.0;
+		HashMap<String, Vertex> vertices = getVertexMap(flowGraph);
 		// Initial delta
 		Integer delta = 1;
 		Double maxCapOutS = 0.0, t = 0.0;
@@ -45,7 +62,7 @@ public class FFScaling {
 
 			ArrayList<String> path;
 			while (null != (path = findPath(limitedResidualGraph))) {
-				Double bottleneck = getBottleneck(limitedResidualGraph, path, getVertexMap(limitedResidualGraph));
+				Double bottleneck = getBottleneck(limitedResidualGraph, path);
 				maxFlow += bottleneck;
 				updateFlowGraph(flowGraph, path, bottleneck);
 				residualGraph = toResidualGraph(flowGraph);
@@ -53,11 +70,21 @@ public class FFScaling {
 			}
 			delta /= 2;
 		}
+		System.out.println("time:" + (System.currentTimeMillis() - startTime) + "ms");
 		return maxFlow;
 	}
 
+	/**
+	 * This method updates a network flow graph using a s-t path with its
+	 * "bottleneck" value.
+	 * 
+	 * @param flowGraph  A network flow graph.
+	 * @param path       A List that contains the name of the vetices of a s-t path,
+	 *                   starting with "s", end with "t"
+	 * @param bottleneck The value of the bottleneck of the path
+	 */
 	@SuppressWarnings("unchecked")
-	private static void updateFlowGraph(SimpleGraph flowGraph, ArrayList<String> path, Double bottleneck) {
+	private static void updateFlowGraph(SimpleGraph flowGraph, List<String> path, Double bottleneck) {
 		HashMap<String, Vertex> vertices = getVertexMap(flowGraph);
 		for (int i = 0; i < path.size() - 1; i++) {
 			Vertex v = vertices.get(path.get(i));
@@ -85,10 +112,17 @@ public class FFScaling {
 		}
 	}
 
+	/**
+	 * Find one s-t path of the input residual graph, using BFS algorithm.
+	 * 
+	 * @param limitedResidualGraph A residual graph.
+	 * @return A List that contains the name of the vertices of a s-t path, starting
+	 *         with "s", end with "t"
+	 */
 	@SuppressWarnings("unchecked")
-	private static ArrayList<String> findPath(SimpleGraph limitedResidualGraph) {
+	private static ArrayList<String> findPath(SimpleGraph residualGraph) {
 		ArrayList<String> list = new ArrayList<>();
-		HashMap<String, Vertex> vertices = getVertexMap(limitedResidualGraph);
+		HashMap<String, Vertex> vertices = getVertexMap(residualGraph);
 		if (null == vertices.get("s") || null == vertices.get("t")) {
 			return list;
 		}
@@ -99,7 +133,7 @@ public class FFScaling {
 		postV.put("s", null);
 		while (!queue.isEmpty()) {
 			Vertex v = queue.poll();
-			for (Iterator<Edge> iterator = limitedResidualGraph.incidentEdges(v); iterator.hasNext();) {
+			for (Iterator<Edge> iterator = residualGraph.incidentEdges(v); iterator.hasNext();) {
 				Edge e = iterator.next();
 				if (e.getSecondEndpoint().getName() == "t") {
 					postV.put("t", (String) v.getName());
@@ -125,9 +159,17 @@ public class FFScaling {
 		return list;
 	}
 
+	/**
+	 * Compute the value of the bottleneck of a s-t path.
+	 * 
+	 * @param residualGraph A residual graph
+	 * @param path          A List that contains the name of the vetices of a s-t
+	 *                      path, starting with "s", end with "t"
+	 * @return The value of the bottleneck of the path
+	 */
 	@SuppressWarnings("unchecked")
-	private static Double getBottleneck(SimpleGraph residualGraph, List<String> path,
-			HashMap<String, Vertex> residualGraphVertices) {
+	private static Double getBottleneck(SimpleGraph residualGraph, List<String> path) {
+		HashMap<String, Vertex> residualGraphVertices = getVertexMap(residualGraph);
 		Double bottleneck = Double.MAX_VALUE;
 		for (int i = 0; i < path.size() - 1; i++) {
 			Vertex v = residualGraphVertices.get(path.get(i));
@@ -141,6 +183,15 @@ public class FFScaling {
 		return bottleneck;
 	}
 
+	/**
+	 * This method generates a limited residual graph from a residual graph, with
+	 * all edges' residual capcity larger than delta
+	 * 
+	 * @param residualGraph A residual graph
+	 * @param delta
+	 * @return A corresponding limited residual graph that all edges' residual
+	 *         capcity larger than delta
+	 */
 	@SuppressWarnings("unchecked")
 	private static SimpleGraph toLimitedResidualGraph(SimpleGraph residualGraph, Integer delta) {
 		SimpleGraph limitedResidualGraph = new SimpleGraph();
@@ -160,8 +211,14 @@ public class FFScaling {
 		return limitedResidualGraph;
 	}
 
+	/**
+	 * This method generates a residual graph from a network flow graph.
+	 * 
+	 * @param flowGraph A network flow graph
+	 * @return A corresponding residual graph
+	 */
 	@SuppressWarnings("unchecked")
-	public static SimpleGraph toResidualGraph(SimpleGraph flowGraph) {
+	private static SimpleGraph toResidualGraph(SimpleGraph flowGraph) {
 		SimpleGraph residualGraph = new SimpleGraph();
 		for (Iterator<Vertex> iterator = flowGraph.vertices(); iterator.hasNext();) {
 			Vertex v = iterator.next();
@@ -188,8 +245,15 @@ public class FFScaling {
 		return residualGraph;
 	}
 
+	/**
+	 * Generate a network flow graph that having the same vertices and edges of the
+	 * input graph.
+	 * 
+	 * @param graph A simple graph
+	 * @return A corresponding network flow graph
+	 */
 	@SuppressWarnings("unchecked")
-	public static SimpleGraph toFlowGraph(SimpleGraph graph) {
+	private static SimpleGraph toFlowGraph(SimpleGraph graph) {
 		SimpleGraph flowGraph = new SimpleGraph();
 		for (Iterator<Vertex> iterator = graph.vertices(); iterator.hasNext();) {
 			Vertex v = iterator.next();
@@ -205,8 +269,14 @@ public class FFScaling {
 		return flowGraph;
 	}
 
+	/**
+	 * This method returns a HashMap of (String, Vertex) pairs.
+	 * 
+	 * @param flowGraph A network flow graph
+	 * @return A HashMap of (String, Vertex) pairs
+	 */
 	@SuppressWarnings("unchecked")
-	public static HashMap<String, Vertex> getVertexMap(SimpleGraph flowGraph) {
+	private static HashMap<String, Vertex> getVertexMap(SimpleGraph flowGraph) {
 		HashMap<String, Vertex> map = new HashMap<>();
 		for (Iterator<Vertex> iterator = flowGraph.vertices(); iterator.hasNext();) {
 			Vertex v = iterator.next();
