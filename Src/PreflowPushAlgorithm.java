@@ -9,6 +9,10 @@ public class PreflowPushAlgorithm {
 	// then create an adjacency list of searched vertices for the given vertex
 	//
     public static void updateAdjacenyList(SimpleGraph g, Hashtable table, Vertex v) {
+    	// Clear the adjacency list and set current to the start
+    	v.adjacencyList.clear();
+    	v.current = 0;
+    	
     	// First check if t has already been in saturation
     	Vertex t = (Vertex) table.get("t");
     	double capacity = 0.0;
@@ -125,8 +129,6 @@ public class PreflowPushAlgorithm {
 			}else {
 				v.setHeight(0);
 			}
-			
-			//System.out.println(v.getName() + " " + v.getHeight() + " " + v.getExcess());
 		}
 
 		// Initialize flow for all the edges
@@ -139,8 +141,6 @@ public class PreflowPushAlgorithm {
 			}else {
 				e.setFlow(0.0);
 			}
-			
-			//System.out.println(e + " " + e.getFlow());
 		}
 	
 		// Update excess for all the vertices
@@ -152,19 +152,8 @@ public class PreflowPushAlgorithm {
 			if ((double) v.getExcess() > 0.0) {
 				excessMaxHeap.add(v);
 			}
-			
-			//System.out.println(v.updateExcess() + " " + v.getName() + " " + v.getExcess());
 		}
-		
-		/*
-		while (!excessMaxHeap.isEmpty()) {
-			Vertex v = excessMaxHeap.poll();
-			System.out.println(v.getName() + " " + " " + v.getHeight() + " " + v.getExcess());
-		}
-		*/
-		
-		int cnt = 0;
-		
+
 		// Start algorithm
 		while (!excessMaxHeap.isEmpty()) {
 			cnt++;
@@ -178,7 +167,7 @@ public class PreflowPushAlgorithm {
 			}
 			
 			// Case 1: Relabel
-			if ((double) v.getExcess() > 0.0 && v.adjacencyList.isEmpty()) {
+			if ((double) v.getExcess() > 0.0 && (int) v.current == v.adjacencyList.size()) {
 				relabel(v); 
 				// Update adjacency list of v once v is relabeled
 				updateAdjacenyList(graph, table, v);
@@ -199,6 +188,7 @@ public class PreflowPushAlgorithm {
 				Edge e = graph.findEdge(v, w);
 				boolean isSaturatingPush;
 				
+				// Normal situation for push, continue as usual
 				if ((double) v.getExcess() > 0 
 						&& (int) w.getHeight() < (int) v.getHeight()) {
 					isSaturatingPush = push(graph, v, w);	
@@ -211,10 +201,28 @@ public class PreflowPushAlgorithm {
 								" with [flow: " + e.getFlow() + "]");
 					}
 				}
+				// Notice! This an abnormal situation for push!
+				// v exhausted its excess once and was out of excessMaxHeap, 
+				// but its adjacency list and current were still been kept!
+				// When v entered excessMaxHeap and being polled out again, 
+				// the old adjacency list and old current might not be correct.
+				// Therefore, update adjacency list of v and add it to excessMaxHeap again.
+				//
+				// Example: see SimpleG.txt, "Nonsaturating Push r1 to l1 with [flow:1.0]"
 				else {
-					System.out.println("Error: push not satisfied");
-					System.out.println("The end");
-					return;
+					// Update adjacency list of v
+					updateAdjacenyList(graph, table, v);
+					
+					// Add v to excessMaxHeap again
+					if ((double) v.getExcess() > 0.0 
+							&& !v.getName().equals("t") 
+							&& !excessMaxHeap.contains(v)) {
+						excessMaxHeap.add(v);
+						System.out.println("Add " + v.getName() + " with [excess: " + v.getExcess() + 
+								", height: " + v.getHeight() + "]");
+					}
+					
+					continue;
 				}
 				
 				// Add v to max heap again if excess of v is positive
@@ -238,29 +246,8 @@ public class PreflowPushAlgorithm {
 				// If the push is a saturating push, move to next edge
 				if (isSaturatingPush) {
 					v.current++;
-					
-					/*
-					if ((int) v.current == v.adjacencyList.size()) {
-						v.current = 0;
-					}
-					*/
 				}
 			}
-			
-			//updateAdjacenyList(graph, table, v);
-			
-			if (cnt == 9) {
-				LinkedList<String> n = new LinkedList<String>();
-				
-				for (int i=0; i<v.adjacencyList.size(); i++) {
-					Vertex v1 = (Vertex) v.adjacencyList.get(i);
-					n.add((String) v1.getName());
-				}
-				
-				System.out.println(v.getName() + " " + n + " " + v.current);
-				return;
-			}
-			
 		}
 		
 		System.out.println("\nPreflow-Push finished");
@@ -282,16 +269,16 @@ public class PreflowPushAlgorithm {
 	public static void main(String args[]) {
 		String fileName0 = "F:\\JAVA\\JDK11\\graphCode\\Graph\\SimpleG.txt";
 		String fileName1 = "F:\\JAVA\\JDK11\\graphCode\\Graph\\Bipartite1.txt";
-		String fileName2 = "F:\\JAVA\\JDK11\\graphCode\\Graph\\Bipartite2.txt"; // problem
+		String fileName2 = "F:\\JAVA\\JDK11\\graphCode\\Graph\\Bipartite2.txt"; 
 		String fileName3 = "F:\\JAVA\\JDK11\\graphCode\\Graph\\20v-3out-4min-355max.txt";
 		String fileName4 = "F:\\JAVA\\JDK11\\graphCode\\Graph\\100v-5out-25min-200max.txt";
 		String fileName5 = "F:\\JAVA\\JDK11\\graphCode\\Graph\\smallMesh.txt";
-		String fileName6 = "F:\\JAVA\\JDK11\\graphCode\\Graph\\mediumMesh.txt"; // problem
+		String fileName6 = "F:\\JAVA\\JDK11\\graphCode\\Graph\\mediumMesh.txt"; 
 		String fileName7 = "F:\\JAVA\\JDK11\\graphCode\\Graph\\n10-m10-cmin5-cmax10-f30.txt";
-		String fileName8 = "F:\\JAVA\\JDK11\\graphCode\\Graph\\n100-m100-cmin10-cmax20-f949.txt"; // problem
+		String fileName8 = "F:\\JAVA\\JDK11\\graphCode\\Graph\\n100-m100-cmin10-cmax20-f949.txt"; 
 		
 		SimpleGraph g = new SimpleGraph();
-		Hashtable t = GraphInput.LoadSimpleGraph(g, fileName0);
+		Hashtable t = GraphInput.LoadSimpleGraph(g, fileName8);
 		
 		System.out.println("");
 		PreflowPush(g, t);
