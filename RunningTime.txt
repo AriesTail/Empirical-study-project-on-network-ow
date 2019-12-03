@@ -1,0 +1,37 @@
+SimpleG.txt
+Maximum flow of the graph is 8.0
+Running time: 7ms
+
+Bipartite1.txt
+Maximum flow of the graph is 150.0
+Running time: 59ms
+
+Bipartite2.txt
+Maximum flow of the graph is 898.0
+Running time: 602ms
+
+20v-3out-4min-355max.txt
+Maximum flow of the graph is 368.0
+Running time: 83ms
+
+100v-5out-25min-200max.txt
+Maximum flow of the graph is 517.0
+Running time: 857ms
+
+smallMesh.txt
+Maximum flow of the graph is 6.0
+Running time: 8ms
+
+mediumMesh.txt
+Maximum flow of the graph is 25.0
+Running time: 1268ms
+
+n10-m10-cmin5-cmax10-f30.txt
+Maximum flow of the graph is 12.0
+Running time: 22ms
+
+n100-m100-cmin10-cmax20-f949.txt
+Maximum flow of the graph is 886.0
+Running time: 30975ms
+
+
