@@ -177,44 +177,15 @@ public class PreflowPushAlgorithm {
 				Edge e = graph.findEdge(v, w);
 				boolean isSaturatingPush;
 				
-				// Normal situation for push, continue as usual
-				//if ((int) v.getHeight() == (int) w.getHeight() + 1 ) {
-					isSaturatingPush = push(graph, v, w);	
-					
-					if (isSaturatingPush) {
-						System.out.println("Saturating Push " + v.getName() + " to " + w.getName() + 
-								" with [flow: " + e.getFlow() + "]");
-					}else {
-						System.out.println("Nonsaturating Push " + v.getName() + " to " + w.getName() + 
-								" with [flow: " + e.getFlow() + "]");
-					}
-				//}
+				isSaturatingPush = push(graph, v, w);	
 				
-				/*
-				// Notice! This is an abnormal situation for push!
-				// v exhausted its excess once and was out of excessMaxHeap, 
-				// but its adjacency list and current were still been kept!
-				// When v entered excessMaxHeap and being polled out again, 
-				// the old adjacency list and old current might not be correct.
-				// Therefore, update adjacency list of v and add it to excessMaxHeap again.
-				//
-				// Example: see SimpleG.txt, "Nonsaturating Push r1 to l1 with [flow:1.0]"
-				else {
-					// Update adjacency list of v
-					updateAdjacencyList(graph, v);
-					
-					// Add v to excessMaxHeap again
-					if ((double) v.getExcess() > 0.0 
-							&& !v.getName().equals("t") 
-							&& !excessMaxHeap.contains(v)) {
-						excessMaxHeap.add(v);
-						System.out.println("Add " + v.getName() + " with [excess: " + v.getExcess() + 
-								", height: " + v.getHeight() + "]");
-					}
-					
-					continue;
+				if (isSaturatingPush) {
+					System.out.println("Saturating Push " + v.getName() + " to " + w.getName() + 
+							" with [flow: " + e.getFlow() + "]");
+				}else {
+					System.out.println("Nonsaturating Push " + v.getName() + " to " + w.getName() + 
+							" with [flow: " + e.getFlow() + "]");
 				}
-				*/
 				
 				// Add v to max heap again if excess of v is positive
 				if ((double) v.getExcess() > 0.0 
