@@ -2,39 +2,38 @@ import java.io.*;
 import java.util.*;
 
 
-public class PreflowPushAlgorithm {
-
+public class PreflowPushAlgorithm_bkp {
+	
 	//
-    // Search all the possible adjacent vertices lower than a given vertex,
-	// then create an adjacency list of searched vertices for the given vertex
+	// Simply search all the possible adjacent vertices lower than a given vertex
 	//
-    public static void updateAdjacencyList(SimpleGraph g, Vertex v) {
-    	// Clear the adjacency list and set current to the start
-    	v.adjacencyList.clear();
-    	v.current = 0;
-    	
-    	// Update the adjacency list of v
+	public static LinkedList findAdjacency(SimpleGraph g, Vertex v) {
+		LinkedList adjacencyList = new LinkedList();
+		
+		// Update the adjacency list of v
     	for (int i=0; i<v.incidentEdgeList.size(); i++) {
     		Edge e = (Edge) v.incidentEdgeList.get(i);
     		Vertex w = g.opposite(v, e);
     		
-    		// If height of w is 1 less than v
-    		if ((int) v.getHeight() == (int) (w.getHeight() + 1) ) {
+    		// If height of w is less than v
+    		if (v.getHeight() == (w.getHeight() + 1)) {
     			// If e is a forward edge
     			if (g.direction(v, w)
     					// For forward edge, if there is room for flow to increase
     					&& (double) e.getFlow() < (double) e.getData()) {
-    				v.adjacencyList.add(w);
+    				adjacencyList.add(w);
     			}
     			// If e is a backward edge
     			else if (!g.direction(v, w) 
     					// For backward edge, if there is room for flow to decrease
     					&& (double) e.getFlow() > 0.0) {
-    				v.adjacencyList.add(w);
+    				adjacencyList.add(w);
     			}
     		}
     	}
-    }
+    	
+    	return adjacencyList;
+	}
     	
     //
     // Push operation
@@ -78,22 +77,24 @@ public class PreflowPushAlgorithm {
 	//
 	// Relabel operation
 	//
-	public static void relabel(SimpleGraph g, Vertex v) {
+	public static void relabel(Vertex v) {
 		v.relabel();
+	}
+	
+	//
+	// Check if there exists a positive excess vertex in the graph
+	//
+	public static Vertex existPositiveExcessVertex(SimpleGraph g) {
+		LinkedList vList = g.vertexList;
 		
-		// Update adjacency list of v, once v is relabeled
-		updateAdjacencyList(g, v);
-		
-		// Update adjacency list of related vertices concerning v, once v is relabeled
-		for (int i=0; i<v.incidentEdgeList.size(); i++) {
-			Edge e = (Edge) v.incidentEdgeList.get(i);
-			Vertex w = g.opposite(v, e);
-			
-			// Only update vertices that have v in their adjacency lists
-			if (w.adjacencyList.contains(v)) {
-				updateAdjacencyList(g, w);
+		for (int i=0; i<vList.size(); i++) {
+			Vertex v = (Vertex) vList.get(i);
+			if ((double) v.getExcess() > 0.0) {
+				return v;
 			}
 		}
+		
+		return null;
 	}
 	
 	//
@@ -103,6 +104,7 @@ public class PreflowPushAlgorithm {
 		LinkedList eList = graph.edgeList;
 		LinkedList vList = graph.vertexList;
 		
+		
 		// Use a max heap to store vertices which have positive excess
 		PriorityQueue<Vertex> excessMaxHeap = new PriorityQueue<Vertex>(
 				graph.numVertices(), new Comparator<Vertex>() { 
@@ -111,6 +113,7 @@ public class PreflowPushAlgorithm {
 		    	return w.getHeight() - v.getHeight();
 		    }
 		});
+		
 		
 		// Initialize height for all the vertices		
 		for (int i=0; i<vList.size(); i++) {
@@ -146,21 +149,25 @@ public class PreflowPushAlgorithm {
 			}
 		}
 
+		//Vertex v = existPositiveExcessVertex(graph);
+		//int cnt = 0;
+		
 		// Start algorithm
 		while (!excessMaxHeap.isEmpty()) {
+		//while (!existPositiveExcessVertex(graph).equals(null)) {
+			//cnt++;
 			
 			Vertex v = excessMaxHeap.poll();
+			//Vertex v = existPositiveExcessVertex(graph);
 			System.out.println("Poll out " + v.getName());
 			
-			// If v hasn't set up adjacency list yet, set it up
-			if (v.adjacencyList.isEmpty()) {
-				updateAdjacencyList(graph, v);
-			}
+			LinkedList vAdjacencyList = findAdjacency(graph, v);
 			
 			// Case 1: Relabel
-			if ((int) v.current == v.adjacencyList.size()) {
-				relabel(graph, v); 
+			if (vAdjacencyList.isEmpty()) {
+				relabel(v); 
 				System.out.println("Relabel " + v.getName() + " with [height: " + v.getHeight() + "]");
+				
 				
 				// Add v to max heap again if excess of v is positive
 				if ((double) v.getExcess() > 0.0 
@@ -170,51 +177,27 @@ public class PreflowPushAlgorithm {
 					System.out.println("Add " + v.getName() + " with [excess: " + v.getExcess() + 
 						", height: " + v.getHeight() + "]");
 				}
+				
 			}
 			// Case 2: Push
 			else {
-				Vertex w = (Vertex) v.adjacencyList.get(v.current);
+				Random randomGenerator = new Random();
+				int randomIndex = randomGenerator.nextInt(vAdjacencyList.size());
+				
+				Vertex w = (Vertex) vAdjacencyList.get(randomIndex);
 				Edge e = graph.findEdge(v, w);
 				boolean isSaturatingPush;
 				
-				// Normal situation for push, continue as usual
-				//if ((int) v.getHeight() == (int) w.getHeight() + 1 ) {
-					isSaturatingPush = push(graph, v, w);	
-					
-					if (isSaturatingPush) {
-						System.out.println("Saturating Push " + v.getName() + " to " + w.getName() + 
-								" with [flow: " + e.getFlow() + "]");
-					}else {
-						System.out.println("Nonsaturating Push " + v.getName() + " to " + w.getName() + 
-								" with [flow: " + e.getFlow() + "]");
-					}
-				//}
+				isSaturatingPush = push(graph, v, w);	
 				
-				/*
-				// Notice! This is an abnormal situation for push!
-				// v exhausted its excess once and was out of excessMaxHeap, 
-				// but its adjacency list and current were still been kept!
-				// When v entered excessMaxHeap and being polled out again, 
-				// the old adjacency list and old current might not be correct.
-				// Therefore, update adjacency list of v and add it to excessMaxHeap again.
-				//
-				// Example: see SimpleG.txt, "Nonsaturating Push r1 to l1 with [flow:1.0]"
-				else {
-					// Update adjacency list of v
-					updateAdjacencyList(graph, v);
-					
-					// Add v to excessMaxHeap again
-					if ((double) v.getExcess() > 0.0 
-							&& !v.getName().equals("t") 
-							&& !excessMaxHeap.contains(v)) {
-						excessMaxHeap.add(v);
-						System.out.println("Add " + v.getName() + " with [excess: " + v.getExcess() + 
-								", height: " + v.getHeight() + "]");
-					}
-					
-					continue;
+				if (isSaturatingPush) {
+					System.out.println("Saturating Push " + v.getName() + " to " + w.getName() + 
+							" with [flow: " + e.getFlow() + "]");
+				}else {
+					System.out.println("Nonsaturating Push " + v.getName() + " to " + w.getName() + 
+							" with [flow: " + e.getFlow() + "]");
 				}
-				*/
+				
 				
 				// Add v to max heap again if excess of v is positive
 				if ((double) v.getExcess() > 0.0 
@@ -225,7 +208,7 @@ public class PreflowPushAlgorithm {
 							", height: " + v.getHeight() + "]");
 				}
 				
-				// Add v to max heap again if excess of v is positive
+				// Add w to max heap again if excess of v is positive
 				if ((double) w.getExcess() > 0.0 
 						&& !w.getName().equals("t") 
 						&& !excessMaxHeap.contains(w)) {
@@ -234,21 +217,45 @@ public class PreflowPushAlgorithm {
 							", height: " + w.getHeight() + "]");
 				}
 				
-				// If the push is a saturating push, move to next edge
-				if (isSaturatingPush) {
-					v.current++;
+				
+				/*
+				if (cnt == 1000) {
+					Edge e1 = graph.findEdge(v, w);
+					
+					System.out.println("");
+					System.out.println(v.getName() + ", height is " + v.getHeight() + ", excess is " + v.getExcess());
+					System.out.println(w.getName() + ", height is " + w.getHeight() + ", excess is " + w.getExcess());
+					System.out.println("Edge " + v.getName() + "-" + w.getName() + "," + " capacity is " + (double)e1.getData() + ", flow is " + e1.getFlow());
+					
+					String list = new String();
+					for (int i=0; i<vAdjacencyList.size(); i++) {
+						Vertex vAdjacent = (Vertex) vAdjacencyList.get(i);
+						list = list + vAdjacent.getName() + " ";
+					}
+					System.out.println(v.getName() + " adjacency list is " + list);
+					
+					if (graph.direction(v, w)) {
+						System.out.println(v.getName() + "->" + w.getName());
+					}
+					else {
+						System.out.println(w.getName() + "->" + v.getName());
+					}
+					
+					return;
 				}
+				*/
 			}
+
 		}
 		
 		System.out.println("\nPreflow-Push finished");
 		
 		// Calculate the maximum flow
 		double maxFlow = 0.0;
-		Vertex s = (Vertex) table.get("s");
+		Vertex t = (Vertex) table.get("t");
 		
-		for (int i=0; i<s.incidentEdgeList.size(); i++) {
-			Edge e = (Edge) s.incidentEdgeList.get(i);
+		for (int i=0; i<t.incidentEdgeList.size(); i++) {
+			Edge e = (Edge) t.incidentEdgeList.get(i);
 			maxFlow = maxFlow + e.getFlow();
 		}
 		System.out.println("Maximum flow of the graph is " + maxFlow);
@@ -270,7 +277,7 @@ public class PreflowPushAlgorithm {
 		String fileName8 = "F:\\JAVA\\JDK11\\graphCode\\Graph\\n100-m100-cmin10-cmax20-f949.txt"; // 949.0
 		
 		SimpleGraph g = new SimpleGraph();
-		Hashtable t = GraphInput.LoadSimpleGraph(g, fileName8);
+		Hashtable t = GraphInput.LoadSimpleGraph(g, fileName4);
 		
 		System.out.println("");
 		

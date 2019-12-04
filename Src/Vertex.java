@@ -44,13 +44,14 @@ public class Vertex {
         this.name = name;
         this.incidentEdgeList = new LinkedList();
         
+        // Params for Preflow-Push
         this.excess = 0.0;
         this.height = 0;
         this.adjacencyList = new LinkedList();
         this.current = 0;
     }
     
-    // Override
+    // Override for Preflow-Push
     public Vertex(Object data, Object name, Double excess, Integer height) {
         this.data = data;
         this.name = name;
@@ -127,9 +128,8 @@ public class Vertex {
     	height++;
     }
     
-    
     // Update excess of this vertex
-    public boolean updateExcess() {
+    public void updateExcess() {
 		LinkedList incidentEdges = this.incidentEdgeList;
 		Double excessCnt = 0.0;
 				
@@ -143,12 +143,6 @@ public class Vertex {
 			}
 		}
 		
-		if ((double) excessCnt != (double) this.excess) {
-			this.setExcess(excessCnt);
-			return true;
-		}else {
-			return false;
-		}
+		this.setExcess(excessCnt);
     }
-    
 }
