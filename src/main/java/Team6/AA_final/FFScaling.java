@@ -16,7 +16,7 @@ import Team6.graph.Vertex;
 
 public class FFScaling {
 
-	static final String GRAPH_PATH = "GRAPH\\";
+	static final String GRAPH_PATH = "GRAPH1\\";
 
 	/**
 	 * Code to test the methods of this class.
