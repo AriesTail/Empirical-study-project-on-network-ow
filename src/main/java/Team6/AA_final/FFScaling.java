@@ -1,6 +1,8 @@
 package Team6.AA_final;
 
 import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,14 +24,37 @@ public class FFScaling {
 	 * Code to test the methods of this class.
 	 */
 	public static void main(String[] args) {
-		String[] filelist = new File(GRAPH_PATH).list();
-
-		for (int i = 0; i < filelist.length; i++) {
-			SimpleGraph graph = new SimpleGraph();
-			GraphInput.LoadSimpleGraph(graph, GRAPH_PATH + filelist[i]);
-			System.out.println("maximum flow:" + FFScaling(toFlowGraph(graph)) + "\n");
+		File file = new File("result.csv");
+		FileWriter writer = null;
+		try {
+			writer = new FileWriter(file, true);
+			List<File> list = getFiles(GRAPH_PATH);
+			for (int i = 0; i < list.size(); i++) {
+				SimpleGraph graph = new SimpleGraph();
+				GraphInput.LoadSimpleGraph(graph, list.get(i).getAbsolutePath());
+				Double[] result = FFScaling(toFlowGraph(graph));
+				writer.write(list.get(i).getParent() + "," + list.get(i).getName() + "," + result[0] + "," + result[1]
+						+ "\n");
+				writer.flush();
+			}
+			writer.close();
+		} catch (IOException e1) {
+			e1.printStackTrace();
 		}
+	}
 
+	public static List<File> getFiles(String path) {
+		File root = new File(path);
+		List<File> files = new ArrayList<File>();
+		if (!root.isDirectory()) {
+			files.add(root);
+		} else {
+			File[] subFiles = root.listFiles();
+			for (File f : subFiles) {
+				files.addAll(getFiles(f.getAbsolutePath()));
+			}
+		}
+		return files;
 	}
 
 	/**
@@ -39,7 +64,7 @@ public class FFScaling {
 	 * @return The maximum flow value of flowGraph
 	 */
 	@SuppressWarnings("unchecked")
-	public static Double FFScaling(SimpleGraph flowGraph) {
+	public static Double[] FFScaling(SimpleGraph flowGraph) {
 		Long startTime = System.currentTimeMillis();
 		Double maxFlow = 0.0;
 		HashMap<String, Vertex> vertices = getVertexMap(flowGraph);
@@ -71,7 +96,7 @@ public class FFScaling {
 			delta /= 2;
 		}
 		System.out.println("time:" + (System.currentTimeMillis() - startTime) + "ms");
-		return maxFlow;
+		return new Double[] { (double) (System.currentTimeMillis() - startTime), maxFlow };
 	}
 
 	/**
